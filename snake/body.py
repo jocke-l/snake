@@ -32,8 +32,8 @@ class Coordinate(namedtuple('CoordinateBase', 'x y')):
 class Direction(enum.Enum):
     RIGHT = Coordinate(1, 0)
     LEFT = Coordinate(-1, 0)
-    UP = Coordinate(0, 1)
-    DOWN = Coordinate(0, -1)
+    UP = Coordinate(0, -1)
+    DOWN = Coordinate(0, 1)
 
     def __abs__(self):
         return abs(self.value)
