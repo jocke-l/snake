@@ -104,3 +104,29 @@ class TestBody(unittest.TestCase):
         self.assertEqual(self.body.head_segment.start, Coordinate(6, 4))
         self.assertEqual(self.body.head_segment.end, Coordinate(3, 4))
         self.assertEqual(self.body.head_segment.length, 4)
+
+    def test_self_collision(self):
+        body = Body(Coordinate(3, 5), 5)
+        self.assertFalse(body.self_collision())
+
+        body.turn(Direction.DOWN)
+        self.assertFalse(body.self_collision())
+        body.forward()
+        self.assertFalse(body.self_collision())
+
+        body.turn(Direction.LEFT)
+        self.assertFalse(body.self_collision())
+        body.forward()
+        self.assertFalse(body.self_collision())
+
+        #    y
+        #    7
+        #    6
+        #    5         x x x
+        #    4           o x
+        #    3
+        #    2
+        #    1
+        #  x   1 2 3 4 5 6 7 8
+        body.turn(Direction.UP)
+        self.assertTrue(body.self_collision())

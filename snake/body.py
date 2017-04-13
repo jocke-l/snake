@@ -1,14 +1,39 @@
 import enum
 from collections import namedtuple
 
-Coordinate = namedtuple('Coordinate', 'x y')
+
+class Coordinate(namedtuple('CoordinateBase', 'x y')):
+    def __add__(self, other):
+        if isinstance(other, Coordinate):
+            return Coordinate(self.x + other.x, self.y + other.y)
+        elif isinstance(other, int):
+            return Coordinate(self.x + other, self.y + other)
+        else:
+            raise ValueError(f'Cannot add Coordinate with '
+                             f'{type(other).__name__}')
+
+    def __mul__(self, other):
+        if isinstance(other, Coordinate):
+            return Coordinate(self.x * other.x, self.y * other.y)
+        elif isinstance(other, int):
+            return Coordinate(self.x * other, self.y * other)
+        else:
+            raise ValueError(f'Cannot multiply Coordinate with '
+                             f'{type(other).__name__}')
+
+    def __abs__(self):
+        return Coordinate(abs(self.x), abs(self.y))
+
+    def cross_product(self, other):
+        return self.x * other.y - other.x * self.y
+
 
 
 class Direction(enum.Enum):
-    RIGHT = 1
-    LEFT = -1
-    UP = 2
-    DOWN = -2
+    RIGHT = Coordinate(1, 0)
+    LEFT = Coordinate(-1, 0)
+    UP = Coordinate(0, 1)
+    DOWN = Coordinate(0, -1)
 
     def __abs__(self):
         return abs(self.value)
@@ -27,24 +52,31 @@ class Segment:
         return f'<{self}>'
 
     def __str__(self):
-        return f'Segment({self.direction}, {self.start}, {self.length})'
+        return (f'{type(self).__name__}({self.direction}, {self.start}, '
+                f'{self.length})')
 
     @property
     def end(self):
         return self.forward_position(self.length - 1)
 
-    def forward_position(self, steps=1):
-        if self.direction == Direction.RIGHT:
-            return Coordinate(self.start.x + steps, self.start.y)
-        elif self.direction == Direction.LEFT:
-            return Coordinate(self.start.x - steps, self.start.y)
-        elif self.direction == Direction.UP:
-            return Coordinate(self.start.x, self.start.y + steps)
-        elif self.direction == Direction.DOWN:
-            return Coordinate(self.start.x, self.start.y - steps)
+    def forward_position(self, steps=1) -> Coordinate:
+        return self.start + self.direction.value * steps
 
     def forward(self):
         self.start = self.forward_position()
+
+    def crosses_point(self, point):
+        return abs(
+            Coordinate(
+                self.end.x - self.start.x,
+                self.end.y - self.start.y
+            ).cross_product(
+                Coordinate(
+                    point.x - self.start.x,
+                    point.y - self.start.y
+                )
+            )
+        ) < 0.0001
 
 
 class Body:
@@ -62,7 +94,7 @@ class Body:
 
     @property
     def tail_segments(self):
-        return self.segments[:-1]
+        return self.segments[:-2]
 
     @property
     def tail_segment(self):
@@ -73,7 +105,11 @@ class Body:
         del self.segments[0]
 
     def self_collision(self):
-        raise NotImplemented
+        for segment in self.tail_segments:
+            if segment.crosses_point(self.head_segment.end):
+                return True
+
+        return False
 
     def forward(self):
         if self.head_segment == self.tail_segment:
