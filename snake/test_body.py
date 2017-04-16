@@ -129,4 +129,5 @@ class TestBody(unittest.TestCase):
         #    1
         #  x   1 2 3 4 5 6 7 8
         body.turn(Direction.UP)
+        body.forward()
         self.assertTrue(body.self_collision())

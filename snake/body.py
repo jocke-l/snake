@@ -1,39 +1,14 @@
 import enum
-from collections import namedtuple
+from typing import List
 
-
-class Coordinate(namedtuple('CoordinateBase', 'x y')):
-    def __add__(self, other):
-        if isinstance(other, Coordinate):
-            return Coordinate(self.x + other.x, self.y + other.y)
-        elif isinstance(other, int):
-            return Coordinate(self.x + other, self.y + other)
-        else:
-            raise ValueError(f'Cannot add Coordinate with '
-                             f'{type(other).__name__}')
-
-    def __mul__(self, other):
-        if isinstance(other, Coordinate):
-            return Coordinate(self.x * other.x, self.y * other.y)
-        elif isinstance(other, int):
-            return Coordinate(self.x * other, self.y * other)
-        else:
-            raise ValueError(f'Cannot multiply Coordinate with '
-                             f'{type(other).__name__}')
-
-    def __abs__(self):
-        return Coordinate(abs(self.x), abs(self.y))
-
-    def cross_product(self, other):
-        return self.x * other.y - other.x * self.y
-
+from snake import Coordinate
 
 
 class Direction(enum.Enum):
     RIGHT = Coordinate(1, 0)
     LEFT = Coordinate(-1, 0)
-    UP = Coordinate(0, -1)
-    DOWN = Coordinate(0, 1)
+    UP = Coordinate(0, 1)
+    DOWN = Coordinate(0, -1)
 
     def __abs__(self):
         return abs(self.value)
@@ -48,35 +23,29 @@ class Segment:
         if initial_forward:
             self.forward()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self}>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (f'{type(self).__name__}({self.direction}, {self.start}, '
                 f'{self.length})')
 
     @property
-    def end(self):
+    def end(self) -> Coordinate:
         return self.forward_position(self.length - 1)
 
-    def forward_position(self, steps=1) -> Coordinate:
+    def forward_position(self, steps: int = 1) -> Coordinate:
+        self.direction.value: Coordinate
         return self.start + self.direction.value * steps
 
-    def forward(self):
+    def forward(self) -> None:
         self.start = self.forward_position()
 
-    def crosses_point(self, point):
-        return abs(
-            Coordinate(
-                self.end.x - self.start.x,
-                self.end.y - self.start.y
-            ).cross_product(
-                Coordinate(
-                    point.x - self.start.x,
-                    point.y - self.start.y
-                )
-            )
-        ) < 0.0001
+    def crosses_point(self, point: Coordinate) -> bool:
+        s, e = self.start, self.end
+
+        return (max(s.x, e.x) >= point.x >= min(s.x, e.x) and
+                max(s.y, e.y) >= point.y >= min(s.y, e.y))
 
 
 class Body:
@@ -85,33 +54,37 @@ class Body:
                                  head_segment_length)]
 
     @property
-    def length(self):
+    def length(self) -> int:
         return sum(segment.length for segment in self.segments)
 
     @property
-    def head_segment(self):
+    def head_segment(self) -> Segment:
         return self.segments[-1]
 
     @property
-    def tail_segments(self):
+    def tail_segments(self) -> List[Segment]:
         return self.segments[:-2]
 
     @property
-    def tail_segment(self):
+    def tail_segment(self) -> Segment:
         return self.segments[0]
 
     @tail_segment.deleter
-    def tail_segment(self):
+    def tail_segment(self) -> None:
         del self.segments[0]
 
-    def self_collision(self):
+    @property
+    def locked(self) -> bool:
+        return self.head_segment.length == 0
+
+    def self_collision(self) -> bool:
         for segment in self.tail_segments:
             if segment.crosses_point(self.head_segment.end):
                 return True
 
         return False
 
-    def forward(self):
+    def forward(self) -> None:
         if self.head_segment == self.tail_segment:
             self.head_segment.forward()
         else:
@@ -126,7 +99,11 @@ class Body:
 
             self.head_segment.length += 1
 
-    def turn(self, direction):
+    def grow(self) -> None:
+        self.tail_segment.length += 1
+        self.tail_segment.start = self.tail_segment.forward_position(-1)
+
+    def turn(self, direction) -> None:
         if abs(direction) != abs(self.head_segment.direction):
             self.segments.append(Segment(direction, self.head_segment.end, 0,
                                          initial_forward=True))
