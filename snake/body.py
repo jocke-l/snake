@@ -1,5 +1,5 @@
 import enum
-from typing import List
+from typing import List, Optional
 
 from snake import Coordinate
 
@@ -49,7 +49,10 @@ class Segment:
 
 
 class Body:
-    def __init__(self, head_segment_start, head_segment_length):
+    def __init__(self, plane_width, plane_height, head_segment_start,
+                 head_segment_length):
+        self.plane_width = plane_width
+        self.plane_height = plane_height
         self.segments = [Segment(Direction.RIGHT, head_segment_start,
                                  head_segment_length)]
 
@@ -77,12 +80,25 @@ class Body:
     def locked(self) -> bool:
         return self.head_segment.length == 0
 
-    def self_collision(self) -> bool:
-        for segment in self.tail_segments:
-            if segment.crosses_point(self.head_segment.end):
+    def crosses_point(self, point: Coordinate,
+                      segments: Optional[List[Segment]] = None) -> bool:
+        if segments is None:
+            segments = self.segments
+
+        segments: List[Segment] = segments
+        for segment in segments:
+            if segment.crosses_point(point):
                 return True
 
         return False
+
+    def self_collision(self) -> bool:
+        return self.crosses_point(self.head_segment.end,
+                                  segments=self.tail_segments)
+
+    def wall_collision(self) -> bool:
+        return (self.head_segment.end.x in (0, self.plane_width + 1) or
+                self.head_segment.end.y in (0, self.plane_height + 1))
 
     def forward(self) -> None:
         if self.head_segment == self.tail_segment:
