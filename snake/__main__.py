@@ -3,35 +3,29 @@ import random
 
 import time
 
-from snake import render
-from snake.body import Body, Coordinate, Direction
+from snake import Coordinate
+from snake.body import Body, Direction
+from snake.candy import Candy, Bonus
+from snake.render import draw_body, draw_candy, draw_bonus, draw_time_left
 
 WIDTH = 18
 HEIGHT = 14
-
-
-def make_candy(body, width, height):
-    while True:
-        candy = Coordinate(random.randint(1, width - 2),
-                           random.randint(1, height - 2))
-
-        if not body.crosses_point(candy):
-            return candy
 
 
 def main(stdscr):
     curses.curs_set(False)
     stdscr.nodelay(True)
 
-    body = Body(WIDTH, HEIGHT, Coordinate(3, 5), 4)
-
     plane = curses.newwin(HEIGHT + 2, WIDTH + 2, 3, 0)
 
     scoreboard = curses.newwin(3, WIDTH + 2, 0, 0)
-
     score = 0
 
-    candy = make_candy(body, WIDTH, HEIGHT)
+    body = Body(WIDTH, HEIGHT, Coordinate(3, 5), 4)
+
+    candy = Candy(body, WIDTH, HEIGHT)
+    bonus = Bonus(body, WIDTH, HEIGHT)
+    bonus_interval = random.choice([7, 10])
 
     while not body.self_collision() and not body.wall_collision():
         keypress = stdscr.getch()
@@ -48,18 +42,35 @@ def main(stdscr):
             elif keypress == 27:
                 break
 
-        if body.head_segment.end == candy:
+        if body.head_segment.end == candy.position:
             body.grow()
-            score += 50
-            candy = make_candy(body, WIDTH, HEIGHT)
+            score += candy.points
+            candy.make_new()
+
+            if not bonus.is_visible:
+                bonus.reset()
+
+        if bonus.is_visible:
+            if body.head_segment.end == bonus.position:
+                body.grow()
+                score += bonus.points
+                bonus.nom()
+            else:
+                bonus.countdown()
+        elif candy.count % bonus_interval == 0:
+            bonus.show()
 
         plane.clear()
         plane.border()
 
-        render.draw_body(body, plane)
-        render.draw_candy(candy, plane)
-
+        scoreboard.clear()
         scoreboard.border()
+
+        draw_body(body, plane)
+        draw_candy(candy, plane)
+        draw_bonus(bonus, plane)
+        draw_time_left(bonus, scoreboard,)
+
         scoreboard.addstr(1, 2, f'Score: {score}')
 
         plane.refresh()
