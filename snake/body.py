@@ -76,16 +76,10 @@ class Body:
     def tail_segment(self) -> None:
         del self.segments[0]
 
-    @property
-    def locked(self) -> bool:
-        return self.head_segment.length == 0
-
     def crosses_point(self, point: Coordinate,
                       segments: Optional[List[Segment]] = None) -> bool:
-        if segments is None:
-            segments = self.segments
-
-        segments: List[Segment] = segments
+        segments: List[Segment] = \
+            segments if segments is not None else self.segments
         for segment in segments:
             if segment.crosses_point(point):
                 return True

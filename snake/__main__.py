@@ -30,17 +30,16 @@ def main(stdscr):
     while not body.self_collision() and not body.wall_collision():
         keypress = stdscr.getch()
 
-        if not body.locked:
-            if keypress == curses.KEY_RIGHT:
-                body.turn(Direction.RIGHT)
-            elif keypress == curses.KEY_LEFT:
-                body.turn(Direction.LEFT)
-            elif keypress == curses.KEY_UP:
-                body.turn(Direction.DOWN)
-            elif keypress == curses.KEY_DOWN:
-                body.turn(Direction.UP)
-            elif keypress == 27:
-                break
+        if keypress == curses.KEY_RIGHT:
+            body.turn(Direction.RIGHT)
+        elif keypress == curses.KEY_LEFT:
+            body.turn(Direction.LEFT)
+        elif keypress == curses.KEY_UP:
+            body.turn(Direction.DOWN)
+        elif keypress == curses.KEY_DOWN:
+            body.turn(Direction.UP)
+        elif keypress == 27:
+            break
 
         if body.head_segment.end == candy.position:
             body.grow()
